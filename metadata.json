@@ -1,0 +1,6 @@
+{
+  "name": "NeuroToto",
+  "description": "Afya ya watoto, mfumo wa fahamu, na malezi ya kidijitali kwa wazazi wa Afrika Mashariki",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
