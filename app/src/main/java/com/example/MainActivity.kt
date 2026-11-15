@@ -15,11 +15,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.data.NeuroRepository
+import com.example.ui.viewmodel.MilestoneViewModel
 import com.example.model.ContentItem
 import com.example.ui.components.AdminAuthDialog
 import com.example.ui.components.ChildProfileDialog
@@ -58,6 +61,12 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun NeuroTotoApp() {
+    val context = LocalContext.current
+    val milestoneViewModel: MilestoneViewModel = viewModel(
+        factory = MilestoneViewModel.factory(context)
+    )
+    val milestoneUiState by milestoneViewModel.uiState.collectAsStateWithLifecycle()
+
     val childProfile by NeuroRepository.childProfile.collectAsStateWithLifecycle()
     val isProUser by NeuroRepository.isProUser.collectAsStateWithLifecycle()
     val freeDaysRemaining by NeuroRepository.freeTrialDaysRemaining.collectAsStateWithLifecycle()
@@ -184,7 +193,7 @@ fun NeuroTotoApp() {
                             child = childProfile,
                             language = language,
                             dailyTip = dailyTip,
-                            milestones = milestones,
+                            milestones = milestoneUiState.allMilestones.ifEmpty { milestones },
                             contentItems = contentItems,
                             faqs = faqs,
                             isPro = isProUser,
@@ -201,9 +210,25 @@ fun NeuroTotoApp() {
                         MilestonesScreen(
                             child = childProfile,
                             language = language,
-                            milestones = milestones,
+                            uiState = milestoneUiState,
                             redFlags = redFlags,
-                            onToggleMilestone = { id -> NeuroRepository.toggleMilestone(id) },
+                            onSelectAgeGroup = { milestoneViewModel.selectAgeGroup(it) },
+                            onSelectCategory = { milestoneViewModel.selectCategory(it) },
+                            onSelectCompletionFilter = { milestoneViewModel.setCompletionFilter(it) },
+                            onToggleMilestone = { id -> milestoneViewModel.toggleMilestoneCompletion(id) },
+                            onAddMilestone = { name, ageGroup, category, description, isCompleted ->
+                                milestoneViewModel.addMilestone(
+                                    name = name,
+                                    ageGroup = ageGroup,
+                                    category = category,
+                                    description = description,
+                                    isCompleted = isCompleted
+                                )
+                            },
+                            onUpdateMilestoneDetails = { id, status, notes ->
+                                milestoneViewModel.updateMilestoneDetails(id, status, notes)
+                            },
+                            onDeleteMilestone = { id -> milestoneViewModel.deleteMilestone(id) },
                             onConsultDoctor = { currentDestination = MainDestination.SPECIALISTS }
                         )
                     }

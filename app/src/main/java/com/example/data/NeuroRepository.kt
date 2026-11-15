@@ -1,12 +1,16 @@
 package com.example.data
 
 import android.content.Context
+import com.example.data.local.NeuroTotoDatabase
 import com.example.model.*
 import com.example.util.SecurityUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 object NeuroRepository {
 
@@ -177,6 +181,14 @@ object NeuroRepository {
         }
     }
 
+    fun syncMilestonesFromDatabase(updated: List<Milestone>) {
+        if (updated.isNotEmpty()) {
+            _milestones.value = updated
+        }
+    }
+
+    fun getDefaultMilestones(): List<Milestone> = getInitialMilestones()
+
     fun logMilestoneObservation(observation: MilestoneObservation) {
         _milestoneObservations.update { listOf(observation) + it }
         if (observation.milestoneId != null) {
@@ -333,6 +345,21 @@ object NeuroRepository {
             celebrationBadge = "🌟"
         )
         logMilestoneObservation(observation)
+
+        if (context != null) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val dao = NeuroTotoDatabase.getInstance(context).developmentalMilestoneDao()
+                    dao.updateMilestoneDetails(
+                        id = milestoneId,
+                        isCompleted = true,
+                        completionStatus = MilestoneStatus.ACHIEVED.name,
+                        parentNotes = observation.observationNote,
+                        dateLogged = observation.date
+                    )
+                } catch (_: Exception) {}
+            }
+        }
     }
 
     fun toggleBookmark(contentId: String) {
